@@ -41,7 +41,7 @@ pipeline {
         sh '''
           export NOMAD_ADDR=${NOMAD_ADDR}
           docker rm -f go-gateway-demo || true
-          nomad job run -var-file=nomad/gateway.vars.hcl nomad/gateway.nomad.hcl
+          nomad job run -detach -var-file=nomad/gateway.vars.hcl nomad/gateway.nomad.hcl
         '''
       }
     }
@@ -51,6 +51,7 @@ pipeline {
         sh '''
           export NOMAD_ADDR=${NOMAD_ADDR}
           sleep 10
+          nomad node status
           nomad job status gateway
           curl -fsS ${CONSUL_ADDR}/v1/health/service/gateway-http?passing=true | jq 'length > 0' | grep true
           curl -fsS ${CONSUL_ADDR}/v1/health/service/gateway-prom?passing=true | jq 'length > 0' | grep true
