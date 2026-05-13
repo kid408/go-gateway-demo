@@ -21,8 +21,7 @@ pipeline {
     stage('Check Docker') {
       steps {
         sh '''
-          #!/usr/bin/env bash
-          set -euo pipefail
+          set -eu
           docker version
           docker buildx version
           docker buildx ls
@@ -34,8 +33,7 @@ pipeline {
     stage('Preflight') {
       steps {
         sh '''
-          #!/usr/bin/env bash
-          set -euo pipefail
+          set -eu
           export NOMAD_ADDR="${NOMAD_ADDR}"
 
           echo '=== active nomad processes ==='
@@ -66,8 +64,7 @@ pipeline {
     stage('Build Image') {
       steps {
         sh '''
-          #!/usr/bin/env bash
-          set -euo pipefail
+          set -eu
           docker buildx build -t go-gateway-demo:${IMAGE_TAG} . --load
         '''
       }
@@ -76,8 +73,7 @@ pipeline {
     stage('Deploy') {
       steps {
         sh '''
-          #!/usr/bin/env bash
-          set -euo pipefail
+          set -eu
           export NOMAD_ADDR="${NOMAD_ADDR}"
           docker rm -f go-gateway-demo || true
           nomad job run -detach -var-file=nomad/gateway.vars.hcl nomad/gateway.nomad.hcl
@@ -88,8 +84,7 @@ pipeline {
     stage('Smoke Test') {
       steps {
         sh '''
-          #!/usr/bin/env bash
-          set -euo pipefail
+          set -eu
           export NOMAD_ADDR="${NOMAD_ADDR}"
 
           diagnose() {
@@ -105,7 +100,7 @@ pipeline {
             curl -fsS "${CONSUL_ADDR}/v1/health/service/gateway-prom?passing=true" | jq . || true
           }
 
-          trap diagnose EXIT
+          trap 'diagnose' 0
 
           for _ in $(seq 1 30); do
             if curl -fsS "${CONSUL_ADDR}/v1/health/service/gateway-http?passing=true" | tee /tmp/gateway-http.json | jq -e 'length > 0' >/dev/null; then
@@ -113,7 +108,7 @@ pipeline {
               nomad job status -verbose gateway
               jq . /tmp/gateway-http.json
               jq . /tmp/gateway-prom.json
-              trap - EXIT
+              trap - 0
               exit 0
             fi
 
