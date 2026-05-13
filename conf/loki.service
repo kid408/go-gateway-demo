@@ -1,0 +1,13 @@
+[Unit]
+Description=Loki
+After=network.target
+
+[Service]
+User=loki
+Group=loki
+Type=simple
+ExecStart=/usr/local/bin/loki -config.file=/opt/monitoring/loki/config/loki-config.yaml
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

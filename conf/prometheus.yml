@@ -1,0 +1,30 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - 127.0.0.1:19090
+
+  - job_name: go-monitor-demo
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - 127.0.0.1:22112
+
+  - job_name: gateway-worker
+    metrics_path: /metrics
+    consul_sd_configs:
+      - server: 127.0.0.1:8500
+        services:
+          - gateway-prom
+          - worker-prom
+    relabel_configs:
+      - source_labels: [__meta_consul_service]
+        target_label: job
+      - source_labels: [__meta_consul_service]
+        target_label: consul_service
+      - source_labels: [__meta_consul_node]
+        target_label: consul_node

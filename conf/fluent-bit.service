@@ -1,0 +1,11 @@
+[Unit]
+Description=Fluent Bit
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/fluent-bit/bin/fluent-bit -c /opt/monitoring/fluent-bit/config/fluent-bit.conf
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
