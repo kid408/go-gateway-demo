@@ -6,9 +6,8 @@ pipeline {
   }
 
   environment {
-    HOST_APP_PORT = '38080'
-    HOST_METRICS_PORT = '32112'
-    HOST_LOG_ROOT = '/opt/monitoring/fluent-bit/logs'
+    NOMAD_ADDR = 'http://127.0.0.1:4646'
+    CONSUL_ADDR = 'http://127.0.0.1:8500'
   }
 
   stages {
@@ -24,6 +23,7 @@ pipeline {
           docker version
           docker buildx version
           docker buildx ls
+          nomad version
         '''
       }
     }
@@ -39,22 +39,8 @@ pipeline {
     stage('Deploy') {
       steps {
         sh '''
-          docker rm -f go-gateway-demo || true
-          docker run -d \
-            --name go-gateway-demo \
-            --restart unless-stopped \
-            --add-host=host.docker.internal:host-gateway \
-            -e SERVICE_NAME=gateway \
-            -e TARGET_SERVICE_NAME=worker \
-            -e TARGET_DISCOVERY_SERVICE_NAME=worker-http \
-            -e APP_PORT=18080 \
-            -e METRICS_PORT=12112 \
-            -e CONSUL_HTTP_ADDR=http://host.docker.internal:8500 \
-            -e APP_LOG_PATH=/app/logs/gateway/go-gateway-demo.log \
-            -p ${HOST_APP_PORT}:18080 \
-            -p ${HOST_METRICS_PORT}:12112 \
-            -v ${HOST_LOG_ROOT}:/app/logs \
-            go-gateway-demo:latest
+          export NOMAD_ADDR=${NOMAD_ADDR}
+          nomad job run -var-file=nomad/gateway.vars.hcl nomad/gateway.nomad.hcl
         '''
       }
     }
@@ -62,11 +48,11 @@ pipeline {
     stage('Smoke Test') {
       steps {
         sh '''
-          sleep 5
-          curl -fsS http://127.0.0.1:${HOST_APP_PORT}/healthz
-          curl -fsS http://127.0.0.1:${HOST_APP_PORT}/workers
-          curl -fsS http://127.0.0.1:${HOST_METRICS_PORT}/metrics | grep '^go_gateway_process_up'
-          curl -fsS http://127.0.0.1:${HOST_METRICS_PORT}/metrics | grep '^go_gateway_online_users'
+          export NOMAD_ADDR=${NOMAD_ADDR}
+          sleep 10
+          nomad job status gateway
+          curl -fsS ${CONSUL_ADDR}/v1/health/service/gateway-http?passing=true | jq 'length > 0' | grep true
+          curl -fsS ${CONSUL_ADDR}/v1/health/service/gateway-prom?passing=true | jq 'length > 0' | grep true
         '''
       }
     }
