@@ -52,6 +52,11 @@ pipeline {
 
           READY_NODE="$(nomad node status -json | jq -r 'map(select(.Status=="ready"))[0].ID // empty')"
           test -n "${READY_NODE}"
+          NODE_DC="$(nomad node status -json | jq -r 'map(select(.Status=="ready"))[0].Datacenter // empty')"
+          test -n "${NODE_DC}"
+          JOB_DC="$(sed -n 's/^datacenters[[:space:]]*=[[:space:]]*\\[\"\\([^\"]*\\)\"\\].*/\\1/p' nomad/gateway.vars.hcl)"
+          test -n "${JOB_DC}"
+          test "${NODE_DC}" = "${JOB_DC}"
 
           echo "=== ready node: ${READY_NODE} ==="
           nomad node status -verbose "${READY_NODE}" | tee /tmp/nomad-gateway-node.txt
@@ -93,7 +98,7 @@ pipeline {
             echo '=== nomad job status ==='
             nomad job status -verbose gateway || true
             echo '=== nomad job allocations ==='
-            nomad job allocations gateway || true
+            nomad job allocs gateway || true
             echo '=== consul gateway-http ==='
             curl -fsS "${CONSUL_ADDR}/v1/health/service/gateway-http?passing=true" | jq . || true
             echo '=== consul gateway-prom ==='
