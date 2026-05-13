@@ -40,6 +40,7 @@ pipeline {
       steps {
         sh '''
           export NOMAD_ADDR=${NOMAD_ADDR}
+          docker rm -f go-gateway-demo || true
           nomad job run -var-file=nomad/gateway.vars.hcl nomad/gateway.nomad.hcl
         '''
       }
