@@ -57,6 +57,7 @@ job "gateway" {
       config {
         image        = var.image
         network_mode = "host"
+        force_pull   = false
       }
 
       env {
@@ -142,4 +143,3 @@ variable "host_volume" {
   type    = string
   default = "logs"
 }
-

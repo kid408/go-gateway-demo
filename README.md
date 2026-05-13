@@ -2,6 +2,8 @@
 
 `go-gateway-demo` 是“入口层”示例服务。
 
+Nomad 部署时不要再用 `latest` 标签。当前示例统一使用 `go-gateway-demo:dev`，否则 Docker driver 很容易继续尝试远程拉取。
+
 它的职责不是自己干重活，而是：
 
 1. 在 Consul 中发现 `worker-http`
@@ -50,4 +52,3 @@ go run .
 ```text
 {job="go-gateway-demo"}
 ```
-

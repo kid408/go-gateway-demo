@@ -1,7 +1,7 @@
 region                  = "global"
 datacenters             = ["nomad-playground-region-dc"]
 namespace               = "default"
-image                   = "go-gateway-demo:latest"
+image                   = "go-gateway-demo:dev"
 count                   = 5
 consul_http_addr        = "http://127.0.0.1:8500"
 consul_service_tags     = ["prometheus.enabled=true"]
