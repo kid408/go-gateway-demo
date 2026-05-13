@@ -1,0 +1,11 @@
+region                  = "global"
+datacenters             = ["dc1"]
+namespace               = "default"
+image                   = "go-gateway-demo:latest"
+count                   = 5
+consul_http_addr        = "http://127.0.0.1:8500"
+consul_service_tags     = ["prometheus.enabled=true"]
+discovery_service_tags  = []
+peer_refresh_interval_ms = "5000"
+dispatch_interval_ms    = "3000"
+host_volume             = "logs"
