@@ -1,4 +1,4 @@
-FROM golang:1.23.3 AS builder
+FROM golang:1.24.0 AS builder
 
 WORKDIR /src
 
@@ -8,11 +8,13 @@ ARG GOSUMDB=sum.golang.org
 ENV GOPROXY=${GOPROXY}
 ENV GOSUMDB=${GOSUMDB}
 
-COPY go.mod ./
-COPY go.sum ./
+COPY go.mod ./go.mod
+COPY go.sum ./go.sum
+WORKDIR /src
 RUN go mod download
 
 COPY . .
+WORKDIR /src
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/go-gateway-demo .
 
 FROM debian:bookworm-slim
@@ -24,8 +26,8 @@ RUN mkdir -p /app/logs
 COPY --from=builder /out/go-gateway-demo /app/go-gateway-demo
 
 EXPOSE 18080 12112
+EXPOSE 19080
 
 ENV APP_LOG_PATH=/app/logs/go-gateway-demo.log
 
 CMD ["/app/go-gateway-demo"]
-

@@ -14,6 +14,7 @@ job "gateway" {
 
     network {
       port "http" {}
+      port "grpc" {}
       port "metrics" {}
     }
 
@@ -26,6 +27,19 @@ job "gateway" {
         name     = "gateway HTTP Check"
         type     = "http"
         path     = "/healthz"
+        interval = "10s"
+        timeout  = "2s"
+      }
+    }
+
+    service {
+      name         = "gateway-grpc"
+      tags         = var.discovery_service_tags
+      port         = "grpc"
+      address_mode = "host"
+      check {
+        name     = "gateway gRPC TCP Check"
+        type     = "tcp"
         interval = "10s"
         timeout  = "2s"
       }
@@ -64,14 +78,16 @@ job "gateway" {
         TZ                            = "Asia/Shanghai"
         SERVICE_NAME                  = "gateway"
         TARGET_SERVICE_NAME           = "worker"
-        TARGET_DISCOVERY_SERVICE_NAME = "worker-http"
+        TARGET_DISCOVERY_SERVICE_NAME = "worker-grpc"
         APP_PORT                      = "${NOMAD_PORT_http}"
+        GRPC_PORT                     = "${NOMAD_PORT_grpc}"
         METRICS_PORT                  = "${NOMAD_PORT_metrics}"
         INSTANCE_ID                   = "${NOMAD_ALLOC_ID}"
         CONSUL_HTTP_ADDR              = var.consul_http_addr
         APP_LOG_PATH                  = "/app/logs/gateway/${NOMAD_ALLOC_ID}.log"
         PEER_REFRESH_INTERVAL_MS      = var.peer_refresh_interval_ms
-        DISPATCH_INTERVAL_MS          = var.dispatch_interval_ms
+        KAFKA_BROKERS                 = var.kafka_brokers
+        KAFKA_TOPIC                   = var.kafka_topic
       }
 
       resources {
@@ -134,9 +150,14 @@ variable "peer_refresh_interval_ms" {
   default = "5000"
 }
 
-variable "dispatch_interval_ms" {
+variable "kafka_brokers" {
   type    = string
-  default = "3000"
+  default = ""
+}
+
+variable "kafka_topic" {
+  type    = string
+  default = "user-session-events"
 }
 
 variable "host_volume" {

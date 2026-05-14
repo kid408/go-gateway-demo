@@ -1,54 +1,47 @@
 # go-gateway-demo
 
-`go-gateway-demo` 是“入口层”示例服务。
+`go-gateway-demo` 现在是 gRPC 接入层。
 
-Nomad 部署时不要再用 `latest` 标签。当前示例统一使用 `go-gateway-demo:dev`，否则 Docker driver 很容易继续尝试远程拉取。
+职责：
 
-它的职责不是自己干重活，而是：
+1. 发现 `worker-grpc`
+2. 对外提供 `GatewayService/OpenSession` 双向流
+3. 将 `login / heartbeat / logout` 事件转发给某个 worker
+4. 接收 worker 的 gRPC 状态上报
+5. 将处理后的会话事件写入 Kafka
 
-1. 在 Consul 中发现 `worker-http`
-2. 周期性随机把任务分发给 worker
-3. 接收 worker 主动回报的状态
-4. 输出更像入口层的指标和日志
+它保留了 HTTP 端口，只做：
 
-## 主要接口
+- `/healthz`
+- `/workers`
+- `/dispatch`
 
-- `GET /`
-- `GET /healthz`
-- `GET /health`
-- `GET /workers`
-- `GET /dispatch?task_type=checkout_cart&delay_ms=300`
-- `POST /worker/report`
-- `GET /metrics`
+真正的业务通信已经改成 gRPC。
 
-## 关键指标
+## 默认端口
 
-- `go_gateway_process_up`
-- `go_gateway_discovered_workers`
-- `go_gateway_dispatch_total`
-- `go_gateway_dispatch_duration_seconds`
-- `go_gateway_online_users`
-- `go_gateway_worker_reports_total`
-- `go_gateway_last_reported_queue_depth`
-- `go_gateway_last_reported_temperature_celsius`
+- HTTP：`18080`
+- gRPC：`19080`
+- Metrics：`12112`
 
-## 本地直跑
+## 关键环境变量
 
-```bash
+- `CONSUL_HTTP_ADDR`
+- `TARGET_DISCOVERY_SERVICE_NAME=worker-grpc`
+- `APP_PORT`
+- `GRPC_PORT`
+- `METRICS_PORT`
+- `KAFKA_BROKERS`
+- `KAFKA_TOPIC`
+
+## 本地运行
+
+```powershell
 go mod tidy
-mkdir -p ./runtime-logs
-SERVICE_NAME=gateway \
-TARGET_SERVICE_NAME=worker \
-TARGET_DISCOVERY_SERVICE_NAME=worker-http \
-CONSUL_HTTP_ADDR=http://127.0.0.1:8500 \
-APP_PORT=18080 \
-METRICS_PORT=12112 \
-APP_LOG_PATH=./runtime-logs/go-gateway-demo.log \
+$env:CONSUL_HTTP_ADDR="http://127.0.0.1:8500"
+$env:TARGET_DISCOVERY_SERVICE_NAME="worker-grpc"
+$env:APP_PORT="18080"
+$env:GRPC_PORT="19080"
+$env:METRICS_PORT="12112"
 go run .
-```
-
-## Loki 查询
-
-```text
-{job="go-gateway-demo"}
 ```
