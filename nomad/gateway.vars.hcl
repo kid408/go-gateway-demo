@@ -7,5 +7,7 @@ consul_http_addr        = "http://127.0.0.1:8500"
 consul_service_tags     = ["prometheus.enabled=true"]
 discovery_service_tags  = []
 peer_refresh_interval_ms = "5000"
-dispatch_interval_ms    = "3000"
+grpc_request_timeout_ms = "3000"
+kafka_brokers           = "127.0.0.1:29092,127.0.0.1:39092,127.0.0.1:49092"
+kafka_topic             = "user-session-events"
 host_volume             = "logs"

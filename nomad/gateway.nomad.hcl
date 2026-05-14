@@ -86,6 +86,7 @@ job "gateway" {
         CONSUL_HTTP_ADDR              = var.consul_http_addr
         APP_LOG_PATH                  = "/app/logs/gateway/${NOMAD_ALLOC_ID}.log"
         PEER_REFRESH_INTERVAL_MS      = var.peer_refresh_interval_ms
+        GRPC_REQUEST_TIMEOUT_MS       = var.grpc_request_timeout_ms
         KAFKA_BROKERS                 = var.kafka_brokers
         KAFKA_TOPIC                   = var.kafka_topic
       }
@@ -148,6 +149,11 @@ variable "memory" {
 variable "peer_refresh_interval_ms" {
   type    = string
   default = "5000"
+}
+
+variable "grpc_request_timeout_ms" {
+  type    = string
+  default = "3000"
 }
 
 variable "kafka_brokers" {
