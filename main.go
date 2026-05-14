@@ -387,12 +387,12 @@ func (a *app) OpenSession(stream sessionrpc.GatewayService_OpenSessionServer) er
 			sessionEventsTotal.WithLabelValues(clientEvent.Action, result).Inc()
 			sessionEventDurationSeconds.WithLabelValues(clientEvent.Action, result).Observe(time.Since(startedAt).Seconds())
 			ack := &sessionrpc.GatewayAck{
-				EventID:     clientEvent.EventID,
-				SessionID:   clientEvent.SessionID,
+				EventId:     clientEvent.EventId,
+				SessionId:   clientEvent.SessionId,
 				Action:      clientEvent.Action,
 				Result:      "error",
 				Message:     "no workers discovered",
-				GatewayID:   a.config.instanceID,
+				GatewayId:   a.config.instanceID,
 				ProcessedAt: time.Now().Format(time.RFC3339),
 			}
 			if sendErr := stream.Send(ack); sendErr != nil {
@@ -402,14 +402,14 @@ func (a *app) OpenSession(stream sessionrpc.GatewayService_OpenSessionServer) er
 		}
 
 		sessionEvent := &sessionrpc.SessionEvent{
-			EventID:     clientEvent.EventID,
-			SessionID:   clientEvent.SessionID,
-			ClientID:    clientEvent.ClientID,
-			UserID:      clientEvent.UserID,
-			DeviceID:    clientEvent.DeviceID,
+			EventId:     clientEvent.EventId,
+			SessionId:   clientEvent.SessionId,
+			ClientId:    clientEvent.ClientId,
+			UserId:      clientEvent.UserId,
+			DeviceId:    clientEvent.DeviceId,
 			Action:      clientEvent.Action,
 			Payload:     clientEvent.Payload,
-			GatewayID:   a.config.instanceID,
+			GatewayId:   a.config.instanceID,
 			SentAt:      clientEvent.SentAt,
 			ProcessedAt: time.Now().Format(time.RFC3339),
 		}
@@ -426,18 +426,18 @@ func (a *app) OpenSession(stream sessionrpc.GatewayService_OpenSessionServer) er
 				PeerID:        worker.ID,
 				PeerAddress:   peerAddress(worker),
 				Action:        clientEvent.Action,
-				EventID:       clientEvent.EventID,
-				SessionID:     clientEvent.SessionID,
-				ClientID:      clientEvent.ClientID,
+				EventID:       clientEvent.EventId,
+				SessionID:     clientEvent.SessionId,
+				ClientID:      clientEvent.ClientId,
 				Detail:        callErr.Error(),
 			})
 			ack := &sessionrpc.GatewayAck{
-				EventID:     clientEvent.EventID,
-				SessionID:   clientEvent.SessionID,
+				EventId:     clientEvent.EventId,
+				SessionId:   clientEvent.SessionId,
 				Action:      clientEvent.Action,
 				Result:      "error",
 				Message:     callErr.Error(),
-				GatewayID:   a.config.instanceID,
+				GatewayId:   a.config.instanceID,
 				ProcessedAt: time.Now().Format(time.RFC3339),
 			}
 			if sendErr := stream.Send(ack); sendErr != nil {
@@ -453,12 +453,12 @@ func (a *app) OpenSession(stream sessionrpc.GatewayService_OpenSessionServer) er
 		case sessionrpc.ActionLogin:
 			if !loggedIn && workerResult.Result == "success" {
 				loggedIn = true
-				currentSessionID = clientEvent.SessionID
+				currentSessionID = clientEvent.SessionId
 				online := a.onlineUsers.Add(1)
 				onlineUsersGauge.Set(float64(online))
 			}
 		case sessionrpc.ActionLogout:
-			if loggedIn && currentSessionID == clientEvent.SessionID && workerResult.Result == "success" {
+			if loggedIn && currentSessionID == clientEvent.SessionId && workerResult.Result == "success" {
 				loggedIn = false
 				currentSessionID = ""
 				online := a.onlineUsers.Add(-1)
@@ -471,13 +471,13 @@ func (a *app) OpenSession(stream sessionrpc.GatewayService_OpenSessionServer) er
 		}
 
 		ack := &sessionrpc.GatewayAck{
-			EventID:           workerResult.EventID,
-			SessionID:         workerResult.SessionID,
+			EventId:           workerResult.EventId,
+			SessionId:         workerResult.SessionId,
 			Action:            workerResult.Action,
 			Result:            workerResult.Result,
 			Message:           workerResult.Message,
-			GatewayID:         a.config.instanceID,
-			WorkerID:          workerResult.WorkerID,
+			GatewayId:         a.config.instanceID,
+			WorkerId:          workerResult.WorkerId,
 			SnapshotObjectKey: workerResult.SnapshotObjectKey,
 			ProcessedAt:       workerResult.ProcessedAt,
 		}
@@ -487,7 +487,7 @@ func (a *app) OpenSession(stream sessionrpc.GatewayService_OpenSessionServer) er
 		}
 
 		enrichedEvent := *sessionEvent
-		enrichedEvent.WorkerID = workerResult.WorkerID
+		enrichedEvent.WorkerId = workerResult.WorkerId
 		enrichedEvent.SnapshotObjectKey = workerResult.SnapshotObjectKey
 		enrichedEvent.ProcessedAt = workerResult.ProcessedAt
 		a.publishSessionEventAsync(stream.Context(), &enrichedEvent)
@@ -499,9 +499,9 @@ func (a *app) OpenSession(stream sessionrpc.GatewayService_OpenSessionServer) er
 			PeerID:        worker.ID,
 			PeerAddress:   peerAddress(worker),
 			Action:        clientEvent.Action,
-			EventID:       clientEvent.EventID,
-			SessionID:     clientEvent.SessionID,
-			ClientID:      clientEvent.ClientID,
+			EventID:       clientEvent.EventId,
+			SessionID:     clientEvent.SessionId,
+			ClientID:      clientEvent.ClientId,
 			OnlineUsers:   a.onlineUsers.Load(),
 			ActiveStreams: a.activeStreams.Load(),
 			Detail:        workerResult.Message,
@@ -511,7 +511,7 @@ func (a *app) OpenSession(stream sessionrpc.GatewayService_OpenSessionServer) er
 
 func (a *app) ReportWorkerStatus(ctx context.Context, report *sessionrpc.WorkerStatusReport) (*sessionrpc.WorkerStatusAck, error) {
 	sourceService := a.config.targetServiceName
-	if report.WorkerID != "" {
+	if report.WorkerId != "" {
 		sourceService = a.config.targetServiceName
 	}
 	workerReportsTotal.WithLabelValues(sourceService, "received").Inc()
@@ -522,7 +522,7 @@ func (a *app) ReportWorkerStatus(ctx context.Context, report *sessionrpc.WorkerS
 		Level:             "info",
 		Event:             "worker_report_received",
 		SourceService:     sourceService,
-		PeerID:            report.WorkerID,
+		PeerID:            report.WorkerId,
 		Action:            "status_report",
 		ReportQueueDepth:  report.QueueDepth,
 		ReportActiveJobs:  report.ActiveJobs,
@@ -534,6 +534,21 @@ func (a *app) ReportWorkerStatus(ctx context.Context, report *sessionrpc.WorkerS
 		Result:     "success",
 		Message:    "report received",
 		ReportedAt: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+func (a *app) PingText(ctx context.Context, req *sessionrpc.GatewayPingRequest) (*sessionrpc.GatewayPingReply, error) {
+	a.writeLog(logEntry{
+		Level:  "info",
+		Event:  "gateway_text_ping_received",
+		Action: "ping_text",
+		Detail: req.Message,
+	})
+
+	return &sessionrpc.GatewayPingReply{
+		Message:     "gateway received: " + req.Message,
+		GatewayId:   a.config.instanceID,
+		ProcessedAt: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
@@ -601,14 +616,14 @@ func (a *app) handleDebugDispatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	event := &sessionrpc.SessionEvent{
-		EventID:     "debug-" + strconv.FormatInt(time.Now().UnixNano(), 10),
-		SessionID:   sessionID,
-		ClientID:    "debug-client",
-		UserID:      1000 + uint64(a.randomInt(500)),
-		DeviceID:    "debug-device",
+		EventId:     "debug-" + strconv.FormatInt(time.Now().UnixNano(), 10),
+		SessionId:   sessionID,
+		ClientId:    "debug-client",
+		UserId:      1000 + uint64(a.randomInt(500)),
+		DeviceId:    "debug-device",
 		Action:      action,
 		Payload:     `{"source":"debug_dispatch"}`,
-		GatewayID:   a.config.instanceID,
+		GatewayId:   a.config.instanceID,
 		SentAt:      time.Now().Format(time.RFC3339),
 		ProcessedAt: time.Now().Format(time.RFC3339),
 	}
@@ -726,8 +741,8 @@ func (a *app) publishSessionEventAsync(ctx context.Context, event *sessionrpc.Se
 			Level:     "error",
 			Event:     "kafka_event_marshal_failed",
 			Action:    event.Action,
-			EventID:   event.EventID,
-			SessionID: event.SessionID,
+			EventID:   event.EventId,
+			SessionID: event.SessionId,
 			Detail:    err.Error(),
 		})
 		return
@@ -737,7 +752,7 @@ func (a *app) publishSessionEventAsync(ctx context.Context, event *sessionrpc.Se
 	defer cancel()
 
 	err = a.kafkaWriter.WriteMessages(writeCtx, kafka.Message{
-		Key:   []byte(event.SessionID),
+		Key:   []byte(event.SessionId),
 		Value: body,
 		Time:  time.Now(),
 	})
@@ -747,8 +762,8 @@ func (a *app) publishSessionEventAsync(ctx context.Context, event *sessionrpc.Se
 			Level:     "error",
 			Event:     "kafka_event_publish_failed",
 			Action:    event.Action,
-			EventID:   event.EventID,
-			SessionID: event.SessionID,
+			EventID:   event.EventId,
+			SessionID: event.SessionId,
 			Detail:    err.Error(),
 		})
 		return

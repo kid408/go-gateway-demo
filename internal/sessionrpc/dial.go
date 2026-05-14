@@ -11,14 +11,11 @@ import (
 func DefaultDialOptions() []grpc.DialOption {
 	return []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithDefaultCallOptions(grpc.ForceCodec(JSONCodec())),
 	}
 }
 
 func DefaultServerOptions() []grpc.ServerOption {
-	return []grpc.ServerOption{
-		grpc.ForceServerCodec(JSONCodec()),
-	}
+	return nil
 }
 
 func DialContext(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
