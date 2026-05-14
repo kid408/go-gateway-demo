@@ -19,6 +19,8 @@ scrape_configs:
     consul_sd_configs:
       - server: 127.0.0.1:8500
         services:
+          - client-demo-prom
+          - event-consumer-demo-prom
           - gateway-prom
           - worker-prom
     relabel_configs:
