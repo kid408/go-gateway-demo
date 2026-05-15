@@ -5,7 +5,7 @@ WORKDIR /src
 ARG GOPROXY=https://goproxy.cn,direct
 ARG GOSUMDB=sum.golang.org
 
-ENV GOPROXY=${GOPROXY}
+ENV GOPROXY=https://goproxy.cn,direct
 ENV GOSUMDB=${GOSUMDB}
 
 COPY go.mod ./go.mod
